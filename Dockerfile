@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 FROM redgate/flyway:13 AS flyway
-FROM ghcr.io/astral-sh/uv:0.13.5 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
 FROM mcr.microsoft.com/playwright/python:v1.64.1-noble
 
 COPY --from=uv /uv /usr/local/bin/uv
