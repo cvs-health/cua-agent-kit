@@ -1,0 +1,60 @@
+<!doctype html>
+<!--
+  SPDX-FileCopyrightText: Copyright 2026 CVS Health and/or one of its affiliates
+  SPDX-License-Identifier: Apache-2.0
+-->
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Care Intake — CUA sample</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <p class="muted">Care Intake · synthetic referral scheduling demo</p>
+      <section id="login">
+        <h1>Sign in</h1>
+        <p>Demo credentials: demo / demo-password</p>
+        <form id="login-form">
+          <label for="username">Username</label>
+          <input id="username" autocomplete="username" required>
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" required>
+          <br>
+          <button>Sign in</button>
+          <p id="error" role="alert"></p>
+        </form>
+      </section>
+      <section id="inventory" hidden>
+        <h1>Referrals</h1>
+        <form id="search-form">
+          <label for="search">Search referrals</label>
+          <input id="search" type="search">
+          <button>Search</button>
+        </form>
+        <div id="products"></div>
+      </section>
+      <section id="checkout" hidden>
+        <h1>Schedule appointment</h1>
+        <p id="selected"></p>
+        <form id="order-form">
+          <label for="quantity">Appointment date</label>
+          <input id="quantity" type="text" placeholder="YYYY-MM-DD" pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" required>
+          <label for="customer">Appointment time</label>
+          <input id="customer" required placeholder="HH:MM" pattern="[0-9]{2}:[0-9]{2}">
+          <br>
+          <button>Confirm appointment</button>
+        </form>
+      </section>
+      <section id="confirmation" hidden>
+        <h1>Appointment confirmed</h1>
+        <p data-testid="appointment-summary" id="summary"></p>
+        <p>Fictional patients only. No real appointment is booked. Reload to reset.</p>
+      </section>
+      <button id="reset" type="button">Reset demo</button>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codify Playwright Workflow"
+  short_description: "Turn successful CUA runs into Playwright"
+  default_prompt: "Use $codify-playwright-workflow to convert successful computer-use runs into a deterministic Playwright workflow."

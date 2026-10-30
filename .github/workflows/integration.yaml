@@ -1,0 +1,57 @@
+name: Integration
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PLAYWRIGHT_HEADLESS: "true"
+      START_URL: http://127.0.0.1:8081
+      WORKFLOW_ACCOUNT_JSON: '{"username":"demo","password":"demo-password"}'
+      DATABASE_BACKEND: none
+      OBJECT_STORAGE_BACKEND: local
+      DETERMINISTIC_ARTIFACTS_DIR: artifacts/ci/deterministic
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@f0ec1fc3b38f5e7cd731bb6ce540c5af426746bb # v6.1.0
+        with:
+          version: "0.13.5"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Install Chromium and system dependencies
+        run: uv run --no-sync playwright install --with-deps chromium
+      - name: Run deterministic workflow against the sample app
+        shell: bash
+        run: |
+          mkdir -p artifacts/ci
+          uv run --no-sync python sample_app/app.py > artifacts/ci/sample-app.log 2>&1 &
+          sample_app_pid=$!
+          trap 'kill "$sample_app_pid" 2>/dev/null || true; wait "$sample_app_pid" 2>/dev/null || true' EXIT
+
+          ready=false
+          for attempt in {1..30}; do
+            if ! kill -0 "$sample_app_pid" 2>/dev/null; then
+              cat artifacts/ci/sample-app.log
+              exit 1
+            fi
+            if curl --fail --silent --max-time 1 "$START_URL" > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            cat artifacts/ci/sample-app.log
+            echo "Sample app did not become ready within 30 attempts."
+            exit 1
+          fi
+
+          uv run --no-sync cua-agent-run

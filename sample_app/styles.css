@@ -1,0 +1,164 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2026 CVS Health and/or one of its affiliates
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f3f4f6;
+  color: #243044;
+  font: 16px/1.5 system-ui, sans-serif;
+}
+
+main {
+  max-width: 760px;
+  margin: 40px auto;
+  padding: 32px;
+  background: #fff;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+p {
+  margin: 0 0 16px;
+}
+
+main > .muted {
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+label {
+  display: block;
+  margin: 16px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  max-width: 360px;
+  padding: 10px 12px;
+  border: 1px solid #b9c2ce;
+  border-radius: 5px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+input::placeholder {
+  color: #788394;
+}
+
+button {
+  padding: 10px 16px;
+  margin: 16px 8px 0 0;
+  border: 1px solid #2858a6;
+  border-radius: 5px;
+  background: #2858a6;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #204a8e;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 3px solid #b6d2f7;
+  outline-offset: 2px;
+}
+
+#search-form {
+  margin-bottom: 24px;
+}
+
+article {
+  padding: 18px 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+article p {
+  margin-bottom: 0;
+  color: #5c687a;
+  font-size: 14px;
+}
+
+article button {
+  margin-top: 12px;
+}
+
+#selected,
+#summary {
+  padding: 16px;
+  border: 1px solid #dfe3e8;
+  border-radius: 5px;
+  background: #f8fafc;
+}
+
+#error {
+  margin: 12px 0 0;
+  color: #b42318;
+  font-size: 14px;
+}
+
+#error:empty {
+  display: none;
+}
+
+#reset {
+  margin-top: 28px;
+  background: #fff;
+  border-color: #cbd2dc;
+  color: #526074;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+#reset:hover {
+  background: #f3f4f6;
+}
+
+.muted {
+  color: #687487;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  main {
+    margin: 16px;
+    padding: 24px;
+  }
+
+  input {
+    max-width: none;
+  }
+}

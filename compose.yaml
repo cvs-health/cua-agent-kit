@@ -1,0 +1,57 @@
+services:
+  app:
+    build:
+      context: .
+      platforms: ["linux/amd64"]
+    platform: linux/amd64
+    profiles: ["app"]
+    network_mode: "service:sample-app"
+    command: cua-agent-run
+    env_file: .env
+    environment:
+      DATABASE_BACKEND: postgres
+      DATABASE_JDBC_URI: jdbc:postgresql://postgres:5432/cua_agent
+      DATABASE_USER: cua
+      OBJECT_STORAGE_BACKEND: local
+      PLAYWRIGHT_HEADLESS: "1"
+      ARTIFACTS_DIR: /app/artifacts/discovery
+      DETERMINISTIC_ARTIFACTS_DIR: /app/artifacts/deterministic
+      START_URL: http://127.0.0.1:8081
+      WORKFLOW_ACCOUNT_JSON: '{"username":"demo","password":"demo-password"}'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      sample-app:
+        condition: service_healthy
+    volumes:
+      - ./artifacts:/app/artifacts
+    shm_size: 1gb
+  sample-app:
+    build: .
+    platform: linux/amd64
+    command: python sample_app/app.py
+    environment:
+      DATABASE_BACKEND: none
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081')"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: cua
+      POSTGRES_PASSWORD: local-development-only
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: cua_agent
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cua -d cua_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  postgres_data:

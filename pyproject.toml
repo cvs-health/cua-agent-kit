@@ -1,0 +1,51 @@
+[project]
+name = "cua-agent-kit"
+version = "0.1.0"
+description = "Turn AI-discovered browser workflows into deterministic Playwright automation"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "CVS Health" }]
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp==3.14.5",
+    "asyncpg==0.32.0",
+    "azure-identity==1.26.0",
+    "azure-storage-blob==12.31.0",
+    "openai-agents==0.24.0",
+    "playwright==1.64.1",
+    "python-dotenv==1.2.4",
+]
+
+[project.urls]
+Repository = "https://github.com/cvs-health/cua-agent-kit"
+Documentation = "https://github.com/cvs-health/cua-agent-kit/blob/main/README.md"
+Issues = "https://github.com/cvs-health/cua-agent-kit/issues"
+
+[project.scripts]
+cua-agent-discover = "cua_agent_kit.discovery.runner:main"
+cua-agent-run = "cua_agent_kit.workflows.runner:main"
+cua-agent-service = "cua_agent_kit.service:main"
+
+[build-system]
+requires = ["uv_build==0.13.5"]
+build-backend = "uv_build"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "PLC0415"]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "ruff==0.17.2",
+    "ty==0.0.91",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "strict"
