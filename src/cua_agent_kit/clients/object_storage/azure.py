@@ -2,13 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-from pathlib import Path
 
 from azure.identity.aio import DefaultAzureCredential
 from azure.storage.blob import ContentSettings
 from azure.storage.blob.aio import BlobServiceClient
 
-from cua_agent_kit.clients.object_storage.object_storage import RunStorageReference
+from cua_agent_kit.core.run_context import RunContext
 
 
 class AzureObjectStorageClient:
@@ -16,7 +15,9 @@ class AzureObjectStorageClient:
         self.account_url = account_url
         self.container = container
 
-    async def upload_run(self, run_id: str, run_dir: Path) -> RunStorageReference:
+    async def upload_run(self, context: RunContext) -> None:
+        run_id = context.run_id
+        run_dir = context.artifacts.run_dir
         if not run_dir.is_dir():
             raise FileNotFoundError("Run artifact directory does not exist.")
         async with DefaultAzureCredential() as credential:
@@ -49,4 +50,8 @@ class AzureObjectStorageClient:
                             ),
                             timeout=120,
                         )
-        return RunStorageReference("azure", self.container, run_id)
+        context.storage_backend = "azure"
+        context.storage_namespace = self.container
+        context.storage_prefix = run_id
+        context.upload_status = "succeeded"
+        context.upload_error = None

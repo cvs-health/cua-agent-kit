@@ -7,8 +7,10 @@ services:
     profiles: ["app"]
     network_mode: "service:sample-app"
     command: cua-agent-run
-    env_file: .env
     environment:
+      DISCOVERY_BACKEND: browser
+      OPENAI_API_KEY:
+      OPENAI_BASE_URL:
       DATABASE_BACKEND: postgres
       DATABASE_JDBC_URI: jdbc:postgresql://postgres:5432/cua_agent
       DATABASE_USER: cua
@@ -26,6 +28,30 @@ services:
     volumes:
       - ./artifacts:/app/artifacts
     shm_size: 1gb
+  windows:
+    build:
+      context: .
+      platforms: ["linux/amd64"]
+    platform: linux/amd64
+    profiles: ["windows"]
+    command: cua-agent-run-windows
+    environment:
+      DISCOVERY_BACKEND: windows
+      OPENAI_API_KEY:
+      OPENAI_BASE_URL:
+      WINDOWS_HOST:
+      WINDOWS_PORT: "${WINDOWS_PORT:-8000}"
+      DATABASE_BACKEND: postgres
+      DATABASE_JDBC_URI: jdbc:postgresql://postgres:5432/cua_agent
+      DATABASE_USER: cua
+      OBJECT_STORAGE_BACKEND: local
+      ARTIFACTS_DIR: /app/artifacts/discovery
+      DETERMINISTIC_ARTIFACTS_DIR: /app/artifacts/deterministic
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./artifacts:/app/artifacts
   sample-app:
     build: .
     platform: linux/amd64

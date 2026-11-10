@@ -7,10 +7,10 @@ from datetime import UTC, datetime
 
 from dotenv import load_dotenv
 
-from cua_agent_kit.clients.database.database import DatabaseClient, RunAuditEntry
+from cua_agent_kit.clients.browser.session import BrowserSession
+from cua_agent_kit.clients.database.database import DatabaseClient
 from cua_agent_kit.clients.factory import create_clients
 from cua_agent_kit.clients.object_storage.object_storage import ObjectStorageClient
-from cua_agent_kit.core.browser import BrowserSession
 from cua_agent_kit.core.config import AppConfig, load_deterministic_config
 from cua_agent_kit.core.logging import configure_logging
 from cua_agent_kit.core.run_context import build_run_context
@@ -44,11 +44,11 @@ class DeterministicWorkflow:
         terminal_assertion: str | None = None
         emit_run_event(record, "run_started")
         try:
-            await self.database.create_run(RunAuditEntry.from_context(record))
+            await self.database.create_run(record)
             logger.info("Starting deterministic run %s", record.run_id)
             await self.session.open()
             page = self.session.page
-            await setup_workflow(page, self.config, self.artifacts)
+            await setup_workflow(page, self.config, self.session)
             terminal_assertion = await self.run_workflow()
 
             status = "succeeded"
@@ -90,18 +90,13 @@ class DeterministicWorkflow:
         except Exception as exception:
             logger.error("Run metadata write failed: %s", type(exception).__name__)
         try:
-            record.storage = await self.storage.upload_run(
-                record.run_id, self.artifacts.run_dir
-            )
-            record.upload_status = (
-                "local" if record.storage.backend == "local" else "succeeded"
-            )
+            await self.storage.upload_run(record)
         except Exception as exception:
             record.upload_status = "failed"
             record.upload_error = type(exception).__name__
             logger.error("Run upload failed: %s", record.upload_error)
         try:
-            await self.database.finish_run(RunAuditEntry.from_context(record))
+            await self.database.finish_run(record)
             record.audit_status = (
                 "succeeded" if self.config.database_backend != "none" else "disabled"
             )
@@ -111,7 +106,7 @@ class DeterministicWorkflow:
 
     async def run_workflow(self) -> str:
         """Extend the authenticated workflow and verify its terminal state here."""
-        return await run_steps(self.session.page, self.artifacts)
+        return await run_steps(self.session.page, self.session)
 
 
 async def run() -> None:

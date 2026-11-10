@@ -18,18 +18,22 @@ class WorkflowCredentials:
 @dataclass(frozen=True)
 class AppConfig:
     playwright_headless: bool
-    max_turns: int
     workflow_credentials: WorkflowCredentials
     artifacts_dir: Path
     deterministic_artifacts_dir: Path
     workflow_prompt: str
     start_url: str
+    max_turns: int = 40
+    discovery_model: str = "gpt-6-sol"
     database_backend: str = "none"
     database_jdbc_uri: str = ""
     database_user: str = ""
     object_storage_backend: str = "local"
     azure_storage_account_url: str = ""
     azure_storage_container: str = ""
+    discovery_backend: str = "browser"
+    windows_host: str = ""
+    windows_port: int = 8000
 
 
 def load_config() -> AppConfig:
@@ -38,11 +42,39 @@ def load_config() -> AppConfig:
 
 
 def load_deterministic_config() -> AppConfig:
-    return _build_config()
+    return _build_config(backend="browser")
 
 
-def _build_config() -> AppConfig:
-    workflow_credentials = _load_workflow_credentials()
+def load_windows_deterministic_config() -> AppConfig:
+    return _build_config(backend="windows")
+
+
+def _build_config(*, backend: str | None = None) -> AppConfig:
+    backend = backend or os.getenv("DISCOVERY_BACKEND", "browser").strip()
+    if backend not in {"browser", "windows"}:
+        raise SystemExit("DISCOVERY_BACKEND must be browser or windows.")
+    windows_host = ""
+    windows_port = 8000
+    if backend == "windows":
+        windows_host = _require_env("WINDOWS_HOST").strip()
+        if not windows_host:
+            raise SystemExit("Set WINDOWS_HOST in your environment or .env file.")
+        try:
+            windows_port = int(os.getenv("WINDOWS_PORT", "8000"))
+        except ValueError as error:
+            raise SystemExit("WINDOWS_PORT must be an integer.") from error
+        if not 1 <= windows_port <= 65535:
+            raise SystemExit("WINDOWS_PORT must be between 1 and 65535.")
+    workflow_credentials = (
+        _load_workflow_credentials()
+        if backend == "browser"
+        else WorkflowCredentials("", "")
+    )
+    selected_prompt = workflow_prompt(
+        workflow_credentials.username, workflow_credentials.password
+    )
+    if not selected_prompt.strip():
+        raise SystemExit("The workflow prompt must not be empty.")
     database_backend = os.getenv("DATABASE_BACKEND", "none").strip()
     storage_backend = os.getenv("OBJECT_STORAGE_BACKEND", "local").strip()
     if database_backend not in {"none", "postgres"}:
@@ -51,16 +83,20 @@ def _build_config() -> AppConfig:
         raise SystemExit("OBJECT_STORAGE_BACKEND must be local or azure.")
     return AppConfig(
         playwright_headless=_env_flag("PLAYWRIGHT_HEADLESS", default=False),
-        max_turns=int(os.getenv("MAX_TURNS", "40")),
         workflow_credentials=workflow_credentials,
         artifacts_dir=Path(os.getenv("ARTIFACTS_DIR", "artifacts/discovery")),
         deterministic_artifacts_dir=Path(
             os.getenv("DETERMINISTIC_ARTIFACTS_DIR", "artifacts/deterministic")
         ),
-        workflow_prompt=workflow_prompt(
-            workflow_credentials.username, workflow_credentials.password
+        workflow_prompt=selected_prompt,
+        start_url=(
+            os.getenv("START_URL", "http://127.0.0.1:8081")
+            if backend == "browser"
+            else ""
         ),
-        start_url=os.getenv("START_URL", "http://127.0.0.1:8081"),
+        discovery_backend=backend,
+        windows_host=windows_host,
+        windows_port=windows_port,
         database_backend=database_backend,
         database_jdbc_uri=_require_env("DATABASE_JDBC_URI")
         if database_backend == "postgres"

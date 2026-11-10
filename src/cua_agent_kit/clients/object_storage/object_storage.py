@@ -1,17 +1,12 @@
 # SPDX-FileCopyrightText: Copyright 2026 CVS Health and/or one of its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-from dataclasses import dataclass
-from pathlib import Path
 from typing import Protocol
 
-
-@dataclass(frozen=True)
-class RunStorageReference:
-    backend: str
-    namespace: str
-    prefix: str
+from cua_agent_kit.core.run_context import RunContext
 
 
 class ObjectStorageClient(Protocol):
-    async def upload_run(self, run_id: str, run_dir: Path) -> RunStorageReference: ...
+    """Publish artifacts and set context location/status only after success."""
+
+    async def upload_run(self, context: RunContext) -> None: ...

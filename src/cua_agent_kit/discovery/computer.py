@@ -5,13 +5,15 @@ import asyncio
 import base64
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from typing import Any, Literal
 
 from agents import AsyncComputer, Button
 from playwright.async_api import Frame, Page
 
+from cua_agent_kit.clients.browser.session import BrowserSession
+from cua_agent_kit.core.action import Action
 from cua_agent_kit.core.artifacts import RunArtifacts
-from cua_agent_kit.core.browser import BrowserSession
 
 CUA_KEY_TO_PLAYWRIGHT_KEY = {
     "/": "Divide",
@@ -112,7 +114,6 @@ class PlaywrightComputer(AsyncComputer):
         height: int = 900,
     ) -> None:
         self._start_url = start_url
-        self._artifacts = artifacts
         self._session = BrowserSession(
             start_url=start_url,
             headless=headless,
@@ -142,7 +143,9 @@ class PlaywrightComputer(AsyncComputer):
 
     async def screenshot(self) -> str:
         png = await self.page.screenshot(full_page=False)
-        await self._artifacts.record_observation(self.page, png)
+        self._session.artifacts.record_action(
+            Action(action="screenshot", screenshot=png, url=self.page.url)
+        )
         return base64.b64encode(png).decode("ascii")
 
     async def click(
@@ -311,20 +314,26 @@ class PlaywrightComputer(AsyncComputer):
         except Exception as error:
             failed_details = dict(details or {})
             failed_details["error_type"] = type(error).__name__
-            await self._artifacts.record_action(
-                self.page,
+            performed = Action(
                 action=action,
+                outcome="error",
                 details=failed_details,
                 target=target,
-                outcome="error",
+                url=self.page.url,
+            )
+            self._session.artifacts.record_action(
+                replace(performed, screenshot=await self._session.screenshot())
             )
             raise
 
-        await self._artifacts.record_action(
-            self.page,
+        performed = Action(
             action=action,
-            details=details,
+            details=details or {},
             target=target,
+            url=self.page.url,
+        )
+        self._session.artifacts.record_action(
+            replace(performed, screenshot=await self._session.screenshot())
         )
 
     async def _target_at(self, x: int, y: int) -> dict[str, Any] | None:

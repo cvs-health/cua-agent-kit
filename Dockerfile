@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 FROM redgate/flyway:13 AS flyway
-FROM ghcr.io/astral-sh/uv:0.13.5 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
 FROM mcr.microsoft.com/playwright/python:v1.64.1-noble
 
 COPY --from=uv /uv /usr/local/bin/uv
@@ -17,7 +17,7 @@ ENV FLYWAY_CLEAN_DISABLED=true FLYWAY_BASELINE_ON_MIGRATE=false
 WORKDIR /app
 ENV HOME=/home/app
 RUN mkdir -p /home/app && chown -R 31337:31337 /home/app
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY src/ ./src/
 COPY sample_app/ ./sample_app/
 RUN uv sync --locked --no-dev

@@ -1,32 +1,34 @@
 # CUA Agent Kit
 
-CUA Agent Kit turns AI-driven browser workflows into reliable, low-cost
-Playwright automation. First, an OpenAI computer-use agent follows a workflow
-written in plain language and records screenshots, browser actions, DOM targets,
-and a Playwright trace. After successful runs, Codex uses that evidence to build
-or update a deterministic workflow that runs without an LLM.
+CUA Agent Kit is a starter kit for automating browser and Windows workflows,
+developed at CVS Health to reduce repetitive, screen-based work. It uses AI to
+discover the steps, then code to repeat them.
 
-This kit targets workflows accessed directly through a web browser, not
-applications running in remote desktop environments.
-
-Use this repository as a starter for your team's workflow. The default discovery
-prompt and deterministic runner log in to the local Care Intake sample app, find
-a fictional referral, schedule an appointment, and verify confirmation.
+First, an OpenAI computer-use agent follows a workflow written in plain language
+and records screenshots, actions, targets, and traces. After successful runs, a
+Codex skill uses that evidence to build or update a deterministic workflow that
+runs without an LLM.
 
 ## Why this exists
 
-Many workflows still require interacting with a UI where APIs are not available.
-This kit complements API-based integrations by automating that browser-based
-work.
+At CVS Health, operational work such as sending documents, processing referrals,
+and supporting specialist consults requires teams to move between applications,
+find the right record, review information, and take the next action. Even where
+APIs exist, they do not always cover every action available in an application.
+This kit complements API-based integrations by automating that UI-driven work,
+with applications beyond healthcare.
 
-AI computer-use agents can figure out how to complete a browser workflow from
+AI computer-use agents can figure out how to complete a workflow from
 plain-language instructions. But discovering how to do something and doing it
 repeatedly are different problems. Once a workflow is understood, asking a model
 to reason through the same steps on every run adds inference cost and
 variability to work that ordinary code can perform.
 
-This kit uses AI to discover browser workflows, then turns successful runs into
-Playwright code your team can inspect, maintain, and reuse without an LLM.
+For workflows with reliable, repeatable steps, this kit turns successful runs
+into Playwright or pywinauto code your team can inspect, maintain, and reuse
+without an LLM. When a workflow breaks, Codex can use production traces to
+diagnose the issue and update the deterministic code, enabling AI-assisted
+maintenance with engineer review, testing, and verification.
 
 ## Requirements
 
@@ -35,24 +37,38 @@ Playwright code your team can inspect, maintain, and reuse without an LLM.
 - Access to the target website (the local sample is included)
 - An OPENAI_API_KEY key for discovery
 
-## Setup
+## Shared Setup
 
-Clone the repository, then install the Python dependencies and Chromium:
+Clone the repository, install the Python dependencies, configure a model API
+key, and put your workflow instructions in `prompt.py`.
 
 ```bash
 git clone https://github.com/cvs-health/cua-agent-kit.git
 cd cua-agent-kit
 uv sync
-uv run playwright install chromium
 ```
 
 Set `OPENAI_API_KEY` for AI discovery. Optionally set `OPENAI_BASE_URL` to use a
 custom API endpoint. Deterministic runs do not require either variable.
 
-Set `START_URL` and `WORKFLOW_ACCOUNT_JSON` for your target website and account.
-The included sample uses these defaults:
+## Browser
+
+Discover workflows in a browser, then codify them into deterministic Playwright
+code. The included browser example uses the local Care Intake sample app.
+
+### Set up
+
+Install Chromium:
+
+```bash
+uv run playwright install chromium
+```
+
+Configure your environment or `.env` for the target website. For the included
+sample:
 
 ```dotenv
+DISCOVERY_BACKEND=browser
 START_URL=http://127.0.0.1:8081
 WORKFLOW_ACCOUNT_JSON='{"username":"demo","password":"demo-password"}'
 ```
@@ -63,29 +79,25 @@ Start the sample app in a separate terminal:
 uv run python sample_app/app.py
 ```
 
-Open http://127.0.0.1:8081.
+Open http://127.0.0.1:8081. For your own website, set `START_URL` and describe
+its workflow and login in the prompt instead.
 
-## Discover a workflow with AI
+### Discover
 
-The workflow instructions are in
-[`src/cua_agent_kit/discovery/prompt.py`](src/cua_agent_kit/discovery/prompt.py).
-Edit that file, then run:
+Edit the instructions in
+[`src/cua_agent_kit/discovery/prompt.py`](src/cua_agent_kit/discovery/prompt.py),
+then run:
 
 ```bash
 uv run cua-agent-discover
 ```
 
-The browser is visible by default so you can watch the agent. Run it several
-times and change the prompt as needed until the workflow succeeds consistently.
-Evidence is saved under:
+The browser is visible by default. Verify the result and repeat discovery as
+needed until the workflow succeeds consistently. Recordings are saved under
+`artifacts/discovery/<run-id>/`, with screenshots, `events.jsonl`, `run.json`,
+and a Playwright `trace.zip`.
 
-```text
-artifacts/discovery/<run-id>/
-```
-
-Each run includes screenshots, `events.jsonl`, `run.json`, and `trace.zip`.
-
-## Codify a successful workflow
+### Codify
 
 From the repository root, ask Codex:
 
@@ -93,21 +105,101 @@ From the repository root, ask Codex:
 Use $codify-playwright-workflow to codify the successful discovery runs.
 ```
 
-Codex compares the successful runs and updates the deterministic Playwright code
-using stable semantic locators instead of recorded screen coordinates.
+The [browser skill](.codex/skills/codify-playwright-workflow/SKILL.md) uses the
+recordings to build or update Playwright code with semantic locators rather than
+replaying screen coordinates.
 
-## Run the deterministic workflow
+### Run
 
 ```bash
 uv run cua-agent-run
 ```
 
-This path uses Playwright directly and does not call an LLM. Its evidence is
-saved under:
+The codified workflow runs without model calls or an API key. Its evidence is
+saved under `artifacts/deterministic/<run-id>/`.
+
+## Windows
+
+Discover workflows on a remote Windows desktop, then codify accessible
+application controls into deterministic pywinauto code. The included Windows
+example saves a Unicode document in Notepad and reopens it, verifying both the
+saved file and editor contents.
+
+### Set up
+
+Follow the [Windows VM setup guide](docs/windows-vm-setup.md) to install the
+server and native dependencies with `windows-host/install.ps1`, then launch the
+server with `windows-host/start.ps1` in the intended user's desktop session.
+Keep the desktop unlocked and avoid competing input during automation.
+
+The controller must be able to reach the VM's private address and server port.
+Configure your local environment or `.env`:
+
+```dotenv
+DISCOVERY_BACKEND=windows
+WINDOWS_HOST=YOUR_PRIVATE_VM_ADDRESS
+WINDOWS_PORT=8000
+```
+
+Windows discovery uses the shared `OPENAI_API_KEY`. Model calls run on the
+controller; application input and screenshots happen on the VM.
+
+### Discover
+
+Edit the Windows task in
+[`src/cua_agent_kit/discovery/prompt.py`](src/cua_agent_kit/discovery/prompt.py),
+then run:
+
+```bash
+uv run cua-agent-discover
+```
+
+Verify the outcome and repeat as needed. Recordings are saved under
+`artifacts/discovery/<run-id>/`, with screenshots, `events.jsonl`, and
+`run.json`. Windows recordings include available UIA/Win32 control metadata.
+
+### Codify
+
+From the repository root, ask Codex:
 
 ```text
-artifacts/deterministic/<run-id>/
+Use $codify-windows-workflow to codify the successful discovery runs.
 ```
+
+The [Windows skill](.codex/skills/codify-windows-workflow/SKILL.md) uses the
+recordings to validate native selectors, implement pywinauto steps, and verify
+replay on the VM.
+
+### Run
+
+With the same VM address and port settings:
+
+```bash
+uv run cua-agent-run-windows
+```
+
+The controller copies `src/cua_agent_kit/workflows/windows_steps.py` to the VM
+and executes it through `computer_server`. No model calls or API key are needed.
+Checkpoints and terminal assertions are saved under
+`artifacts/deterministic/<run-id>/`.
+
+### Run the Windows controller with Docker
+
+After completing the Windows setup above, use Docker Compose instead of local
+`uv` commands:
+
+```bash
+docker compose run --build --rm windows
+```
+
+This runs the deterministic Windows workflow once, writes audit records to
+PostgreSQL, and keeps artifacts locally. For discovery, use
+`docker compose run --build --rm windows cua-agent-discover`, then follow the
+codification steps above.
+
+The controller runs in the same Linux image used for browser workflows. The
+target applications, `computer_server`, and pywinauto remain on the Windows VM,
+which must be reachable from the container.
 
 ## Change the workflow
 

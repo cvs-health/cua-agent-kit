@@ -5,12 +5,13 @@
 
 from playwright.async_api import Page
 
-from cua_agent_kit.core.artifacts import RunArtifacts
+from cua_agent_kit.clients.browser.session import BrowserSession
+from cua_agent_kit.core.action import Action
 from cua_agent_kit.core.config import AppConfig
 
 
 async def setup_workflow(
-    page: Page, config: AppConfig, artifacts: RunArtifacts
+    page: Page, config: AppConfig, session: BrowserSession
 ) -> None:
     await page.get_by_label("Username", exact=True).fill(
         config.workflow_credentials.username
@@ -20,4 +21,10 @@ async def setup_workflow(
     )
     await page.get_by_role("button", name="Sign in", exact=True).click()
     await page.get_by_role("heading", name="Referrals", exact=True).wait_for()
-    await artifacts.record_action(page, action="setup_workflow")
+    session.artifacts.record_action(
+        Action(
+            action="setup_workflow",
+            url=page.url,
+            screenshot=await session.screenshot(),
+        )
+    )

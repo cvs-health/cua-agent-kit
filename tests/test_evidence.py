@@ -20,6 +20,12 @@ def test_run_context_redacts_prompt_before_hashing(context: RunContext) -> None:
     assert "[REDACTED]" in context.prompt
     assert context.prompt_sha256 == hashlib.sha256(context.prompt.encode()).hexdigest()
     assert context.artifacts.run_dir.parent == config.artifacts_dir
+    assert context.model == config.discovery_model
+    context.artifacts.write_run_metadata(context.metadata())
+    metadata = json.loads((context.artifacts.run_dir / "run.json").read_text())
+    assert metadata["model"] == config.discovery_model
+    assert metadata["prompt"] == context.prompt
+    assert metadata["prompt_sha256"] == context.prompt_sha256
 
 
 def test_persisted_metadata_redacts_error_and_retains_run_details(
@@ -71,3 +77,9 @@ def test_run_event_logs_exclude_sensitive_data(
     assert set(payload) == fields
     assert "private-user" not in caplog.text
     assert "private-password" not in caplog.text
+
+
+def test_deterministic_run_does_not_record_a_model(context: RunContext) -> None:
+    deterministic = build_run_context("deterministic", context.config)
+    assert deterministic.model is None
+    assert "model" not in deterministic.metadata()

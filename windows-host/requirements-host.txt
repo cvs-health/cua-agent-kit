@@ -1,0 +1,3 @@
+# Tested host baseline; updates are explicit installer runs, never startup actions.
+cua-computer-server==0.3.46
+-r requirements-inspection.txt

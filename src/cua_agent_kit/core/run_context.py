@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from cua_agent_kit.clients.object_storage.object_storage import RunStorageReference
 from cua_agent_kit.core.artifacts import RunArtifacts
 from cua_agent_kit.core.config import AppConfig
 
@@ -21,12 +20,16 @@ class RunContext:
     prompt: str
     prompt_sha256: str
     started_at: datetime
+    model: str | None = None
+    final_output: str | None = None
     status: str = "running"
     finished_at: datetime | None = None
     terminal_assertion: str | None = None
     error: str | None = None
     error_type: str | None = None
-    storage: RunStorageReference | None = None
+    storage_backend: str | None = None
+    storage_namespace: str | None = None
+    storage_prefix: str | None = None
     upload_error: str | None = None
     upload_status: str = "not_attempted"
     audit_status: str = "not_attempted"
@@ -46,6 +49,11 @@ class RunContext:
             "started_at": self.started_at.isoformat(),
             "status": self.status,
         }
+        if self.model is not None:
+            data["model"] = self.model
+            data["discovery_backend"] = self.config.discovery_backend
+        if self.final_output is not None:
+            data["final_output"] = self.final_output
         if self.finished_at is not None:
             data.update(
                 completed_at=self.finished_at.isoformat(),
@@ -80,4 +88,5 @@ def build_run_context(execution_mode: str, config: AppConfig) -> RunContext:
         prompt=prompt,
         prompt_sha256=hashlib.sha256(prompt.encode()).hexdigest(),
         started_at=started_at,
+        model=config.discovery_model if execution_mode == "discovery" else None,
     )

@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Copyright 2026 CVS Health and/or one of its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
+
 from playwright.async_api import (
     Browser,
     BrowserContext,
@@ -9,7 +11,10 @@ from playwright.async_api import (
     async_playwright,
 )
 
+from cua_agent_kit.core.action import Action
 from cua_agent_kit.core.artifacts import RunArtifacts
+
+logger = logging.getLogger(__name__)
 
 
 class BrowserSession:
@@ -32,6 +37,9 @@ class BrowserSession:
         self._browser: Browser | None = None
         self._context: BrowserContext | None = None
         self._page: Page | None = None
+        self._trace_started = False
+        self._artifacts_finished = False
+        self.trace_path = artifacts.run_dir / "trace.zip"
 
     @property
     def is_open(self) -> bool:
@@ -64,28 +72,70 @@ class BrowserSession:
                 viewport={"width": width, "height": height},
             )
             self._page = await self._context.new_page()
-            await self.artifacts.start(
-                self._context,
-                self._page,
-                start_url=self.start_url,
+            self.artifacts.start(
+                metadata={
+                    "start_url": self.start_url,
+                    "viewport": self._page.viewport_size,
+                }
             )
+            try:
+                await self._context.tracing.start(
+                    screenshots=True, snapshots=True, sources=True
+                )
+                self._trace_started = True
+            except Exception as error:
+                self.artifacts.record_action(
+                    Action(
+                        action="trace_start",
+                        outcome="error",
+                        url=self._page.url,
+                        details={"error": self._safe_error(error)},
+                    ),
+                )
             await self._page.goto(self.start_url, wait_until="domcontentloaded")
-            await self.artifacts.record_action(
-                self._page,
-                action="navigate",
-                details={"url": self.start_url},
+            self.artifacts.record_action(
+                Action(
+                    action="navigate",
+                    details={"url": self.start_url},
+                    url=self.page.url,
+                    screenshot=await self.screenshot(),
+                )
             )
         except Exception:
             raise
 
         return self
 
+    async def screenshot(self) -> bytes | None:
+        """Capture a screenshot without letting capture failures stop execution."""
+        try:
+            return await self.page.screenshot(full_page=False)
+        except Exception as error:
+            logger.warning("Screenshot capture failed: %s", type(error).__name__)
+            return None
+
     async def finish_artifacts(self, status: str) -> None:
-        await self.artifacts.finish(
-            self.context,
-            self.page,
-            status=status,
-        )
+        if self._artifacts_finished:
+            return
+        self._artifacts_finished = True
+
+        final_url = self.page.url
+        metadata = {}
+        try:
+            if self._trace_started:
+                try:
+                    await self.context.tracing.stop(path=str(self.trace_path))
+                except Exception as error:
+                    metadata["trace_error"] = self._safe_error(error)
+        finally:
+            # Preserve metadata even if trace shutdown is cancelled.
+            self.artifacts.finish(
+                final_url=final_url,
+                metadata=metadata,
+            )
+
+    def _safe_error(self, error: Exception) -> str:
+        return self.artifacts.redact(f"{type(error).__name__}: {error}")
 
     async def close(self) -> None:
         if self._browser is not None:

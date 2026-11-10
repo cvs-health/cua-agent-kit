@@ -45,9 +45,10 @@ missing evidence and request another discovery run. Do not invent selectors.
    configuration or browser utilities only when that does not couple it to the agent.
 7. Separate screen-specific interactions from workflow orchestration when the flow
    contains more than a few actions or will be extended later.
-8. Reuse the repository's `RunArtifacts` recorder in deterministic workflows. Capture
-   a screenshot after every semantic step, on failure, and at the terminal state, and
-   retain a Playwright trace for diagnosis.
+8. Capture screenshots with `BrowserSession.screenshot()` and construct `Action`
+   objects at deterministic checkpoints. Pass them to `RunArtifacts.record_action()`
+   after every semantic step, on failure, and at the terminal state. Let the browser
+   session own the Playwright trace for diagnosis.
 
 ## Update after a prompt change
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codify Windows Workflow"
+  short_description: "Turn Windows discovery into native automation"
+  default_prompt: "Use $codify-windows-workflow to convert verified Windows discovery runs into a deterministic pywinauto workflow."

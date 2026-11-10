@@ -34,6 +34,7 @@ def context(tmp_path: Path) -> RunContext:
         artifacts=artifacts,
         run_id="test-run",
         execution_mode="discovery",
+        model=config.discovery_model,
         prompt=artifacts.redact(config.workflow_prompt),
         prompt_sha256="test-hash",
         started_at=datetime(2026, 1, 1, tzinfo=UTC),
