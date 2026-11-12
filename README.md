@@ -18,7 +18,7 @@ APIs exist, they do not always cover every action available in an application.
 This kit complements API-based integrations by automating that UI-driven work,
 with applications beyond healthcare.
 
-AI computer-use agents can figure out how to complete a workflow from
+Traditional robotic process automation (RPA) tools required significant time and investment for every new workflow; AI computer-use agents can figure out how to complete a workflow from
 plain-language instructions. But discovering how to do something and doing it
 repeatedly are different problems. Once a workflow is understood, asking a model
 to reason through the same steps on every run adds inference cost and
