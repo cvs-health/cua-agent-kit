@@ -3,7 +3,7 @@
 
 FROM redgate/flyway:13 AS flyway
 FROM ghcr.io/astral-sh/uv:0.13.7 AS uv
-FROM mcr.microsoft.com/playwright/python:v1.64.1-noble
+FROM mcr.microsoft.com/playwright/python:v1.65.2-noble
 
 COPY --from=uv /uv /usr/local/bin/uv
 COPY --from=flyway /flyway /opt/flyway
