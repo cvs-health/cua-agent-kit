@@ -13,8 +13,8 @@ dependencies = [
     "azure-identity==1.27.0",
     "azure-storage-blob==12.31.1",
     "cua-computer==0.5.19",
-    "openai-agents==0.24.0",
-    "playwright==1.64.1",
+    "openai-agents==0.25.0",
+    "playwright==1.65.2",
     "python-dotenv==1.2.4",
 ]
 
@@ -30,7 +30,7 @@ cua-agent-run-windows = "cua_agent_kit.workflows.windows_runner:main"
 cua-agent-service = "cua_agent_kit.service:main"
 
 [build-system]
-requires = ["uv_build==0.13.7"]
+requires = ["uv_build==0.13.9"]
 build-backend = "uv_build"
 
 [tool.ruff]
@@ -43,9 +43,9 @@ select = ["E", "F", "I", "UP", "PLC0415"]
 [dependency-groups]
 dev = [
     "pytest==9.2.0",
-    "pytest-asyncio==1.4.1",
-    "ruff==0.17.4",
-    "ty==0.0.99",
+    "pytest-asyncio==1.5.0",
+    "ruff==0.17.6",
+    "ty==0.0.107",
 ]
 
 [tool.pytest.ini_options]
